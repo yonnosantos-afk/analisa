@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANBIMA | Data Command Center</title>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js & Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+    <!-- SheetJS -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: {
+                            main: 'var(--bg-main)',
+                            panel: 'var(--bg-panel)',
+                            element: 'var(--bg-element)',
+                            hover: 'var(--bg-hover)',
+                            active: 'var(--bg-active)',
+                        },
+                        border: {
+                            main: 'var(--border-main)',
+                            light: 'var(--border-light)',
+                        },
+                        text: {
+                            main: 'var(--text-main)',
+                            muted: 'var(--text-muted)',
+                            inverse: 'var(--text-inverse)'
+                        },
+                        accent: {
+                            primary: '#06b6d4',
+                            secondary: '#3b82f6',
+                            success: '#10b981',
+                            warning: '#f59e0b',
+                            danger: '#ef4444',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'neon': 'var(--shadow-neon)',
+                        'panel': 'var(--shadow-panel)',
+                        'card': '0 2px 10px rgba(0, 0, 0, 0.05)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-panel: #ffffff;
+            --bg-element: #f1f5f9;
+            --bg-hover: #e2e8f0;
+            --bg-active: #e0f2fe;
+            --border-main: #e2e8f0;
+            --border-light: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-inverse: #ffffff;
+            --shadow-neon: 0 0 10px rgba(6, 182, 212, 0.15);
+            --shadow-panel: 4px 0 24px rgba(0, 0, 0, 0.05);
+            --body-bg-image: none;
+        }
+
+        .dark {
+            --bg-main: #020617;
+            --bg-panel: #0f172a;
+            --bg-element: #1e293b;
+            --bg-hover: #334155;
+            --bg-active: rgba(6, 182, 212, 0.1);
+            --border-main: #1e293b;
+            --border-light: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-inverse: #000000;
+            --shadow-neon: 0 0 15px rgba(6, 182, 212, 0.25);
+            --shadow-panel: 4px 0 24px rgba(0, 0, 0, 0.5);
+            --body-bg-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 60%);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            background-image: var(--body-bg-image);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--border-main);
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        .tech-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+
+        .dark .tech-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border-color: rgba(148, 163, 184, 0.1);
+        }
+
+        .tech-card:hover {
+            border-color: rgba(6, 182, 212, 0.5);
+            box-shadow: var(--shadow-neon);
+        }
+
+        .post-card.active {
+            background: var(--bg-active);
+            border-left: 3px solid #06b6d4;
+            border-color: rgba(6, 182, 212, 0.4);
+        }
+
+        .tech-input {
+            background-color: var(--bg-main);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .tech-input:focus {
+            border-color: #06b6d4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        input[type="date"] {
+            color-scheme: light dark;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-main);
+        }
+
+        .sidebar-link.active {
+            background-color: var(--bg-active);
+            color: #06b6d4;
+            border-left-color: #06b6d4;
+        }
+
+        .topic-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 0.375rem;
+        }
+
+        .topic-item:hover {
+            background-color: var(--bg-hover);
+            color: var(--text-main);
+        }
+
+        .topic-item.active {
+            background-color: var(--bg-active);
+            color: #06b6d4;
+            font-weight: 600;
+        }
+
+        /* Table Styles */
+        .data-table th {
+            background-color: var(--bg-element);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-main);
+        }
+
+        .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+
+        .data-table tr:hover {
+            background-color: var(--bg-hover);
+        }
+
+        /* Sentiment Buttons */
+        .sentiment-btn {
+            transition: all 0.2s;
+            opacity: 0.6;
+            filter: grayscale(1);
+            border-width: 1px;
+        }
+
+        .sentiment-btn:hover {
+            opacity: 0.9;
+            filter: grayscale(0.5);
+            transform: translateY(-1px);
+        }
+
+        .sentiment-btn.selected {
+            opacity: 1;
+            filter: grayscale(0);
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            font-weight: 700;
+            border-width: 2px;
+        }
+
+        /* Nav Tabs */
+        .nav-tab {
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-main);
+        }
+
+        .nav-tab.active {
+            color: #06b6d4;
+            border-bottom-color: #06b6d4;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast {
+            animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        html:not(.dark) .bg-bg-panel {
+            background-color: #ffffff;
+        }
+
+        html:not(.dark) .tech-btn.text-black {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex overflow-hidden transition-colors duration-300">
+
+    <!-- SIDEBAR (Main Navigation) -->
+    <aside
+        class="w-64 bg-bg-panel border-r border-border-main flex flex-col shadow-panel z-50 flex-shrink-0 transition-colors duration-300">
+
+        <!-- Brand -->
+        <div class="h-16 flex items-center px-6 border-b border-border-main">
+            <div
+                class="w-8 h-8 bg-gradient-to-br from-accent-primary to-blue-700 rounded-lg flex items-center justify-center shadow-neon mr-3">
+                <span class="font-mono font-bold text-lg text-white">A</span>
+            </div>
+            <span class="font-sans font-bold text-sm tracking-widest text-text-main uppercase">ANBIMA <span
+                    class="text-accent-primary">INTEL</span></span>
+        </div>
+
+        <!-- Main Menu -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar py-6 px-3 space-y-6">
+
+            <!-- Core Modules -->
+            <div>
+                <div class="px-3 mb-2 text-[10px] font-bold uppercase text-text-muted tracking-wider">Módulos</div>
+                <div onclick="switchView('triagem')" id="side-nav-triagem" class="sidebar-link active">
+                    <i class="fa-solid fa-list-check w-5 text-center"></i> Triagem
+                </div>
+                <div onclick="switchView('lista')" id="side-nav-lista" class="sidebar-link">
+                    <i class="fa-solid fa-table-list w-5 text-center"></i> Lista Geral
+                </div>
+                <div onclick="switchView('dashboard')" id="side-nav-dashboard" class="sidebar-link">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i> Analytics
+                </div>
+            </div>
+
+            <!-- Themes / Topics -->
+            <div>
+                <div class="px-3 mb-2 flex justify-between items-center">
+                    <span class="text-[10px] font-bold uppercase text-text-muted tracking-wider">Espaços de Trabalho
+                        (Temas)</span>
+                    <button onclick="addNewTheme()"
+                        class="text-text-muted hover:text-accent-primary transition-colors"><i
+                            class="fa-solid fa-plus text-xs"></i></button>
+                </div>
+                <div id="themes-list" class="space-y-1">
+                    <!-- Themes injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- User & Theme -->
+        <div class="p-4 border-t border-border-main bg-bg-element/50">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs text-text-muted">Modo Escuro</span>
+                <button onclick="toggleTheme()"
+                    class="w-10 h-5 rounded-full bg-border-main relative flex items-center transition-colors focus:outline-none">
+                    <div
+                        class="w-3 h-3 rounded-full bg-white absolute left-1 transition-transform duration-300 dark:translate-x-5">
+                    </div>
+                </button>
+            </div>
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-8 h-8 rounded-full bg-bg-element border border-border-main flex items-center justify-center text-accent-primary">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-bold text-text-main">Analista Sênior</div>
+                    <div class="text-[10px] text-text-muted font-mono">ID: 8492-X</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-bg-main relative">
+
+        <!-- Context Header (Breadcrumb & Global Actions) -->
+        <header
+            class="h-14 bg-bg-main/95 backdrop-blur border-b border-border-main flex items-center justify-between px-8 z-40 sticky top-0">
+            <div class="flex items-center gap-3 text-sm">
+                <span class="text-text-muted" id="header-module">Triagem</span>
+                <i class="fa-solid fa-chevron-right text-[10px] text-text-muted"></i>
+                <span class="font-bold text-accent-primary flex items-center gap-2" id="header-theme">
+                    <i class="fa-solid fa-folder-open"></i> Todos os Temas
+                </span>
+            </div>
+            <div class="flex items-center gap-4 text-xs">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-bg-element border border-border-main">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="pending-count" class="font-medium text-text-main">12 Pendentes</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Views Container -->
+        <div class="flex-1 overflow-hidden relative">
+
+            <!-- VIEW 1: TRIAGEM -->
+            <div id="view-triagem" class="flex h-full w-full absolute inset-0 transition-opacity duration-300">
+                <!-- Left: Feed -->
+                <div
+                    class="w-[380px] bg-bg-panel border-r border-border-main flex flex-col z-20 flex-shrink-0 transition-colors duration-300">
+                    <div class="p-5 border-b border-border-main space-y-2">
+                        <button onclick="startNewPost()"
+                            class="w-full bg-accent-primary hover:bg-cyan-400 text-white dark:text-black font-bold py-3 px-4 rounded-lg shadow-neon flex items-center justify-center gap-2 group transition-all">
+                            <i class="fa-solid fa-plus transition-transform group-hover:rotate-90"></i> Nova Publicação
+                        </button>
+                        <button onclick="openImportModal()"
+                            class="w-full bg-bg-element hover:bg-bg-hover text-text-main border border-border-main font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 group transition-all">
+                            <i class="fa-solid fa-file-import"></i> Importar Planilha
+                        </button>
+                    </div>
+                    <div class="px-5 py-4 border-b border-border-main space-y-4">
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-text-muted text-xs"></i>
+                            <input type="text" id="filter-search" oninput="applyFilters()" placeholder="Buscar..."
+                                class="w-full bg-bg-main border border-border-main rounded-md py-2 pl-9 pr-3 text-xs text-text-main focus:border-accent-primary focus:outline-none placeholder-text-muted font-mono">
+                        </div>
+                        <div class="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
+                            <button onclick="setNetworkFilter('all')" id="filter-net-all"
+                                class="px-3 py-1 rounded text-[10px] font-bold uppercase bg-accent-primary text-white dark:text-black whitespace-nowrap">Todos</button>
+                            <button onclick="setNetworkFilter('Instagram')" id="filter-net-insta"
+                                class="px-3 py-1 rounded text-[10px] font-bold uppercase bg-bg-element text-text-muted hover:text-text-main border border-border-main whitespace-nowrap">Insta</button>
+                            <button onclick="setNetworkFilter('LinkedIn')" id="filter-net-linkedin"
+                                class="px-3 py-1 rounded text-[10px] font-bold uppercase bg-bg-element text-text-muted hover:text-text-main border border-border-main whitespace-nowrap">LinkedIn</button>
+                        </div>
+                    </div>
+                    <div id="feed-list" class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 bg-bg-main"></div>
+                </div>
+
+                <!-- Right: Console -->
+                <div class="flex-1 bg-bg-main flex flex-col overflow-hidden relative">
+                    <div id="toast-container"
+                        class="absolute top-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+                    <div id="work-area" class="flex-1 overflow-y-auto custom-scrollbar p-8 pb-28">
+
+                        <!-- UNIFIED CARD -->
+                        <div class="tech-card rounded-xl p-6 relative">
+
+                            <!-- 1. HEADER & METADATA -->
+                            <div class="border-b border-border-main pb-6 mb-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3
+                                        class="text-sm font-bold text-accent-secondary uppercase tracking-wide flex items-center gap-2">
+                                        <i class="fa-solid fa-pen-to-square"></i> Detalhes & Classificação
+                                    </h3>
+                                    <span
+                                        class="text-[10px] text-text-muted font-mono bg-bg-element px-2 py-1 rounded border border-border-main">
+                                        <span id="mode-indicator">VIEW</span>
+                                    </span>
+                                </div>
+
+                                <div class="grid grid-cols-4 gap-4">
+                                    <div>
+                                        <label
+                                            class="text-[10px] text-text-muted font-bold uppercase mb-1 block">Rede</label>
+                                        <select id="input-network"
+                                            class="tech-input w-full rounded-md py-1.5 px-3 text-xs">
+                                            <option value="Instagram">Instagram</option>
+                                            <option value="LinkedIn">LinkedIn</option>
+                                            <option value="Facebook">Facebook</option>
+                                            <option value="X (Twitter)">X (Twitter)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="text-[10px] text-text-muted font-bold uppercase mb-1 block">Perfil</label>
+                                        <input type="text" id="input-profile"
+                                            class="tech-input w-full rounded-md py-1.5 px-3 text-xs font-mono">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="text-[10px] text-text-muted font-bold uppercase mb-1 block">Data</label>
+                                        <input type="date" id="input-date"
+                                            class="tech-input w-full rounded-md py-1.5 px-3 text-xs font-mono">
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="text-[10px] text-text-muted font-bold uppercase mb-1 block">URL</label>
+                                        <div class="flex gap-1">
+                                            <input type="text" id="input-link"
+                                                class="tech-input w-full rounded-md py-1.5 px-3 text-xs font-mono text-accent-secondary">
+                                            <a id="btn-open-link" href="#" target="_blank"
+                                                class="bg-bg-element hover:bg-accent-primary hover:text-white text-text-muted border border-border-main rounded-md px-2 flex items-center justify-center transition-colors">
+                                                <i class="fa-solid fa-external-link-alt text-xs"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. CONTENT -->
+                            <div class="mb-6">
+                                <label class="text-[10px] text-text-muted font-bold uppercase mb-1 block">Conteúdo da
+                                    Publicação</label>
+                                <textarea id="input-text" rows="4"
+                                    class="tech-input w-full rounded-md py-3 px-4 text-sm leading-relaxed resize-y custom-scrollbar border-l-4 border-l-border-main focus:border-l-accent-primary"></textarea>
+                            </div>
+
+                            <!-- 3. METRICS & CLASSIFICATION SPLIT -->
+                            <div class="grid grid-cols-12 gap-6 pt-2">
+
+                                <!-- Left: Metrics -->
+                                <div class="col-span-7 pr-6 border-r border-border-main">
+                                    <h4 class="text-xs font-bold text-text-main uppercase mb-3 flex items-center gap-2">
+                                        <i class="fa-solid fa-chart-simple text-text-muted"></i> Métricas
+                                    </h4>
+                                    <div class="grid grid-cols-4 gap-3">
+                                        <div class="bg-bg-element p-2 rounded border border-border-main text-center">
+                                            <div class="text-[10px] text-text-muted uppercase mb-1">Likes</div>
+                                            <input type="number" id="input-likes" oninput="updateEngagementSum()"
+                                                class="bg-transparent text-center w-full text-text-main font-mono font-bold text-sm focus:outline-none">
+                                        </div>
+                                        <div class="bg-bg-element p-2 rounded border border-border-main text-center">
+                                            <div class="text-[10px] text-text-muted uppercase mb-1">Coments</div>
+                                            <input type="number" id="input-comments" oninput="updateEngagementSum()"
+                                                class="bg-transparent text-center w-full text-text-main font-mono font-bold text-sm focus:outline-none">
+                                        </div>
+                                        <div class="bg-bg-element p-2 rounded border border-border-main text-center">
+                                            <div class="text-[10px] text-text-muted uppercase mb-1">Shares</div>
+                                            <input type="number" id="input-shares" oninput="updateEngagementSum()"
+                                                class="bg-transparent text-center w-full text-text-main font-mono font-bold text-sm focus:outline-none">
+                                        </div>
+                                        <!-- TOTAL ENGAGEMENT -->
+                                        <div
+                                            class="bg-bg-element p-2 rounded border border-accent-primary text-center relative overflow-hidden">
+                                            <div class="absolute inset-0 bg-accent-primary opacity-10"></div>
+                                            <div
+                                                class="text-[10px] text-accent-primary font-bold uppercase mb-1 relative z-10">
+                                                Total</div>
+                                            <input type="number" id="input-engagement" readonly
+                                                class="bg-transparent text-center w-full text-accent-primary font-mono text-lg font-bold focus:outline-none relative z-10 cursor-default">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Classification -->
+                                <div class="col-span-5">
+                                    <h4 class="text-xs font-bold text-text-main uppercase mb-3 flex items-center gap-2">
+                                        <i class="fa-solid fa-tags text-text-muted"></i> Classificação
+                                    </h4>
+
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label
+                                                class="text-[10px] text-text-muted font-bold uppercase mb-1 block">Sentimento</label>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <button onclick="setSentiment('positive')" id="btn-positive"
+                                                    class="sentiment-btn py-2 rounded border border-border-main bg-bg-element text-accent-success text-xs font-bold hover:bg-emerald-500/10 flex flex-col items-center justify-center gap-1 transition-all">
+                                                    <i class="fa-regular fa-face-smile text-lg"></i>
+                                                </button>
+                                                <button onclick="setSentiment('neutral')" id="btn-neutral"
+                                                    class="sentiment-btn py-2 rounded border border-border-main bg-bg-element text-text-muted text-xs font-bold hover:bg-bg-hover flex flex-col items-center justify-center gap-1 transition-all">
+                                                    <i class="fa-regular fa-face-meh text-lg"></i>
+                                                </button>
+                                                <button onclick="setSentiment('negative')" id="btn-negative"
+                                                    class="sentiment-btn py-2 rounded border border-border-main bg-bg-element text-accent-danger text-xs font-bold hover:bg-red-500/10 flex flex-col items-center justify-center gap-1 transition-all">
+                                                    <i class="fa-regular fa-face-frown text-lg"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label
+                                                class="text-[10px] text-text-muted font-bold uppercase mb-1 block">Tema
+                                                Associado</label>
+                                            <select id="input-theme"
+                                                class="tech-input w-full rounded-md py-2 px-3 text-xs font-medium text-accent-secondary">
+                                                <!-- Populated by JS -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div id="footer-actions"
+                        class="absolute bottom-0 left-0 w-full bg-bg-panel/90 backdrop-blur-md border-t border-border-main p-4 flex justify-between items-center z-40">
+                        <div class="flex items-center gap-3 text-xs font-mono text-text-muted">
+                            <i class="fa-solid fa-keyboard"></i> Enter para salvar
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="nextPost()"
+                                class="px-6 py-2 rounded border border-text-muted text-text-muted text-xs font-bold uppercase hover:bg-bg-hover hover:text-text-main transition-colors">Pular</button>
+                            <button onclick="saveAndNext()"
+                                class="px-8 py-2 rounded bg-gradient-to-r from-accent-primary to-blue-600 text-white dark:text-black font-bold text-xs uppercase hover:shadow-neon transition-all transform hover:-translate-y-0.5">Salvar
+                                & Classificar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: LISTA -->
+            <div id="view-lista"
+                class="flex h-full w-full absolute inset-0 bg-bg-main transition-opacity duration-300 hidden flex-col p-8">
+                <div class="mb-6 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-2xl font-bold text-text-main tracking-tight">Lista <span
+                                class="text-accent-primary">Geral</span></h2>
+                        <p class="text-sm text-text-muted font-mono mt-1">Consolidado por Tema.</p>
+                    </div>
+                    <button onclick="exportToExcel()"
+                        class="px-4 py-1.5 bg-accent-primary text-black font-bold rounded text-xs uppercase hover:shadow-neon transition-all"><i
+                            class="fa-solid fa-file-export mr-1"></i> Excel</button>
+                </div>
+                <div
+                    class="flex-1 bg-bg-panel border border-border-main rounded-xl overflow-hidden flex flex-col shadow-card">
+                    <div class="overflow-auto custom-scrollbar flex-1">
+                        <table class="w-full data-table border-collapse">
+                            <thead class="sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="w-16">ID</th>
+                                    <th class="w-24">Data</th>
+                                    <th class="w-24">Rede</th>
+                                    <th>Perfil</th>
+                                    <th class="w-1/3">Texto</th>
+                                    <th>Tema</th>
+                                    <th>Sentimento</th>
+                                    <th class="text-right">Engaj.</th>
+                                    <th class="text-center w-20">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-table-body" class="text-text-main"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: DASHBOARD -->
+            <div id="view-dashboard"
+                class="flex h-full w-full absolute inset-0 bg-bg-main transition-opacity duration-300 hidden overflow-y-auto custom-scrollbar p-8 pb-20">
+                <div class="max-w-7xl mx-auto w-full space-y-8">
+                    <div class="flex justify-between items-end border-b border-border-main pb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-text-main tracking-tight">Analytics <span
+                                    class="text-accent-primary">Hub</span></h2>
+                        </div><button onclick="updateDashboard()"
+                            class="p-1.5 bg-bg-element border border-border-main rounded text-text-muted hover:text-text-main"><i
+                                class="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="tech-card p-6 rounded-xl">
+                            <div class="text-[10px] font-bold text-accent-secondary uppercase mb-2">Volume</div>
+                            <div class="text-4xl font-mono font-bold text-text-main" id="dash-total-posts">0</div>
+                        </div>
+                        <div class="tech-card p-6 rounded-xl">
+                            <div class="text-[10px] font-bold text-accent-secondary uppercase mb-2">Engajamento</div>
+                            <div class="text-4xl font-mono font-bold text-accent-primary" id="dash-total-eng">0</div>
+                        </div>
+                        <div class="tech-card p-6 rounded-xl">
+                            <div class="text-[10px] font-bold text-accent-secondary uppercase mb-2">Sentimento</div>
+                            <div class="text-3xl font-bold text-text-main" id="dash-sentiment">--</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="tech-card p-5 rounded-xl flex items-center justify-between">
+                            <div>
+                                <div class="text-[10px] font-bold text-text-muted uppercase mb-1">Curtidas</div>
+                                <div class="text-2xl font-mono font-bold text-text-main" id="dash-likes">0</div>
+                            </div>
+                            <div class="text-pink-500 bg-pink-500/10 p-3 rounded-lg"><i class="fa-regular fa-heart"></i>
+                            </div>
+                        </div>
+                        <div class="tech-card p-5 rounded-xl flex items-center justify-between">
+                            <div>
+                                <div class="text-[10px] font-bold text-text-muted uppercase mb-1">Comentários</div>
+                                <div class="text-2xl font-mono font-bold text-text-main" id="dash-comments">0</div>
+                            </div>
+                            <div class="text-blue-500 bg-blue-500/10 p-3 rounded-lg"><i
+                                    class="fa-regular fa-comment"></i></div>
+                        </div>
+                        <div class="tech-card p-5 rounded-xl flex items-center justify-between">
+                            <div>
+                                <div class="text-[10px] font-bold text-text-muted uppercase mb-1">Compart.</div>
+                                <div class="text-2xl font-mono font-bold text-text-main" id="dash-shares">0</div>
+                            </div>
+                            <div class="text-emerald-500 bg-emerald-500/10 p-3 rounded-lg"><i
+                                    class="fa-solid fa-share"></i></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="tech-card p-6 rounded-xl">
+                            <div class="h-64"><canvas id="chartNetwork"></canvas></div>
+                        </div>
+                        <div class="tech-card p-6 rounded-xl">
+                            <div class="h-64"><canvas id="chartSentiment"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- IMPORT MODAL -->
+    <div id="import-modal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-bg-panel border border-border-main rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-border-main flex justify-between items-center">
+                <h3 class="text-lg font-bold text-text-main flex items-center gap-2">
+                    <i class="fa-solid fa-file-import text-accent-primary"></i> Importar Publicações
+                </h3>
+                <button onclick="closeImportModal()" class="text-text-muted hover:text-text-main transition-colors">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-6">
+                <!-- Download Template -->
+                <div class="bg-bg-element border border-border-main rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <div class="text-accent-secondary text-2xl">
+                            <i class="fa-solid fa-circle-info"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-text-main mb-1">Baixe o Modelo</h4>
+                            <p class="text-xs text-text-muted mb-3">Use nossa planilha modelo para garantir
+                                compatibilidade.</p>
+                            <button onclick="downloadTemplate()"
+                                class="px-4 py-2 bg-accent-secondary hover:bg-blue-600 text-white font-bold rounded text-xs uppercase transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-download"></i> Baixar Modelo (.xlsx)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-text-main uppercase">Upload de Arquivo</label>
+                    <div id="drop-zone"
+                        class="border-2 border-dashed border-border-main hover:border-accent-primary bg-bg-main rounded-lg p-8 text-center transition-all cursor-pointer group">
+                        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="hidden"
+                            onchange="handleFileSelect(event)">
+                        <div class="space-y-3">
+                            <div class="text-4xl text-text-muted group-hover:text-accent-primary transition-colors">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-text-main">Clique ou arraste o arquivo aqui</p>
+                                <p class="text-xs text-text-muted mt-1">Formatos aceitos: .xlsx, .xls, .csv</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="file-preview"
+                        class="hidden bg-bg-element border border-border-main rounded-lg p-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-file-excel text-2xl text-green-500"></i>
+                            <div>
+                                <p class="font-bold text-sm text-text-main" id="file-name"></p>
+                                <p class="text-xs text-text-muted" id="file-size"></p>
+                            </div>
+                        </div>
+                        <button onclick="clearFile()"
+                            class="text-text-muted hover:text-accent-danger transition-colors">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import Preview -->
+                <div id="import-preview" class="hidden space-y-3">
+                    <label class="text-xs font-bold text-text-main uppercase">Pré-visualização</label>
+                    <div
+                        class="bg-bg-element border border-border-main rounded-lg p-4 max-h-48 overflow-y-auto custom-scrollbar">
+                        <p class="text-xs text-text-muted mb-2">Registros encontrados: <span id="preview-count"
+                                class="font-bold text-accent-primary">0</span></p>
+                        <div id="preview-content" class="text-xs text-text-main font-mono"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-bg-element border-t border-border-main flex justify-end gap-3">
+                <button onclick="closeImportModal()"
+                    class="px-6 py-2 rounded border border-border-main text-text-muted hover:text-text-main hover:bg-bg-hover font-bold text-xs uppercase transition-all">
+                    Cancelar
+                </button>
+                <button id="import-btn" onclick="processImport()" disabled
+                    class="px-6 py-2 rounded bg-gradient-to-r from-accent-primary to-blue-600 text-white dark:text-black font-bold text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-neon transition-all">
+                    <i class="fa-solid fa-check mr-1"></i> Importar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- UTILS ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) { html.classList.remove('dark'); localStorage.theme = 'light'; }
+            else { html.classList.add('dark'); localStorage.theme = 'dark'; }
+            if (!document.getElementById('view-dashboard').classList.contains('hidden')) updateDashboard();
+        }
+        if (localStorage.theme === 'light' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: light)').matches)) document.documentElement.classList.remove('dark'); else document.documentElement.classList.add('dark');
+
+        function formatDateForInput(d) { if (!d) return ''; const p = d.split('/'); if (p.length !== 3) return ''; return `${p[2]}-${p[1]}-${p[0]}`; }
+        function formatDateFromInput(d) { if (!d) return ''; const p = d.split('-'); if (p.length !== 3) return ''; return `${p[2]}/${p[1]}/${p[0]}`; }
+
+        // RECALCULA O TOTAL
+        function updateEngagementSum() {
+            const likes = parseInt(document.getElementById('input-likes').value) || 0;
+            const comments = parseInt(document.getElementById('input-comments').value) || 0;
+            const shares = parseInt(document.getElementById('input-shares').value) || 0;
+            const total = likes + comments + shares;
+            document.getElementById('input-engagement').value = total;
+        }
+
+        // --- STATE ---
+        let themes = [
+            { id: 'tax_lca', name: 'Taxação LCA' },
+            { id: 'finfluence', name: 'Finfluence' },
+            { id: 'pri', name: 'PRI in Person' },
+            { id: 'global', name: 'Global Insights' }
+        ];
+        let activeTheme = 'all';
+
+        // Sample Data
+        let postsData = [
+            { id: 1, network: 'Instagram', profile: 'fabio.cermesi', date: '10/06/2025', text: '@anbimaoficial qual sua posição sobre uma eventual taxação de LCIs?', likes: 2, comments: 1, shares: 0, engagement: 3, ai_status: 'PENDENTE', theme_id: 'tax_lca', sentiment: 'neutral' },
+            { id: 2, network: 'LinkedIn', profile: 'Giovanna Bambicini', date: '10/11/2025', text: 'Imagina na COP? Workshop exclusivo.', likes: 40, comments: 4, shares: 0, engagement: 44, ai_status: 'OK', theme_id: 'pri', sentiment: 'positive' },
+            { id: 3, network: 'Facebook', profile: 'Valor Investe', date: '04/06/2025', text: 'O número de influenciadores que falam sobre finanças cresceu quase 40%.', likes: 127, comments: 0, shares: 0, engagement: 127, ai_status: 'OK', theme_id: 'finfluence', sentiment: 'positive' },
+            { id: 4, network: 'X (Twitter)', profile: '@limeinhalf', date: '15/05/2025', text: 'Global Insights chega à segunda edição em outubro.', likes: 85, comments: 0, shares: 0, engagement: 85, ai_status: 'OK', theme_id: 'global', sentiment: 'positive' }
+        ];
+
+        let filters = { network: 'all', search: '', date: '', minEngagement: 0 };
+        let filteredPosts = [];
+        let currentPostIndex = 0;
+        let isCreating = false;
+        let chartsInstances = {};
+
+        // --- THEME MANAGER ---
+        function renderThemeList() {
+            const container = document.getElementById('themes-list');
+            const select = document.getElementById('input-theme');
+
+            container.innerHTML = `
+                <div onclick="selectTheme('all')" class="topic-item ${activeTheme === 'all' ? 'active' : ''}">
+                    <div class="flex items-center gap-2"><i class="fa-solid fa-layer-group"></i> Todos</div>
+                    <span class="text-[10px] bg-bg-element px-1.5 rounded border border-border-main">${postsData.length}</span>
+                </div>
+            `;
+
+            select.innerHTML = `<option value="">Selecione um tema...</option>`;
+
+            themes.forEach(t => {
+                const count = postsData.filter(p => p.theme_id === t.id).length;
+                container.innerHTML += `
+                    <div onclick="selectTheme('${t.id}')" class="topic-item ${activeTheme === t.id ? 'active' : ''}">
+                        <div class="flex items-center gap-2"><i class="fa-regular fa-folder"></i> ${t.name}</div>
+                        <span class="text-[10px] bg-bg-element px-1.5 rounded border border-border-main">${count}</span>
+                    </div>
+                `;
+                select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+            });
+        }
+
+        function selectTheme(id) {
+            activeTheme = id;
+            const name = id === 'all' ? 'Todos os Temas' : themes.find(t => t.id === id).name;
+            document.getElementById('header-theme').innerHTML = `<i class="fa-solid fa-folder-open"></i> ${name}`;
+            renderThemeList();
+            applyFilters();
+        }
+
+        function addNewTheme() {
+            const name = prompt("Nome do novo tema:");
+            if (name) {
+                const id = name.toLowerCase().replace(/\s+/g, '_');
+                themes.push({ id, name });
+                renderThemeList();
+                showToast(`Tema "${name}" criado!`, "success");
+            }
+        }
+
+        // --- CORE ---
+        function switchView(view) {
+            ['triagem', 'lista', 'dashboard'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`side-nav-${v}`).classList.remove('active');
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`side-nav-${view}`).classList.add('active');
+            document.getElementById('header-module').innerText = view.charAt(0).toUpperCase() + view.slice(1);
+
+            if (view === 'triagem') { applyFilters(); }
+            if (view === 'lista') renderListView();
+            if (view === 'dashboard') updateDashboard();
+        }
+
+        function applyFilters() {
+            if (document.getElementById('filter-search')) {
+                filters.search = document.getElementById('filter-search').value.toLowerCase();
+            }
+
+            filteredPosts = postsData.filter(post => {
+                if (activeTheme !== 'all' && post.theme_id !== activeTheme) return false;
+                if (filters.network !== 'all' && post.network !== filters.network) return false;
+                const matchText = (post.text + post.profile).toLowerCase().includes(filters.search);
+                if (filters.search && !matchText) return false;
+                return true;
+            });
+
+            document.getElementById('pending-count').innerText = `${filteredPosts.filter(p => p.ai_status === 'PENDENTE').length} Pendentes`;
+
+            currentPostIndex = 0;
+            renderFeed();
+            if (filteredPosts.length > 0) {
+                loadPost(0);
+                if (document.getElementById('work-area')) document.getElementById('work-area').classList.remove('hidden');
+                if (document.getElementById('footer-actions')) document.getElementById('footer-actions').classList.remove('hidden');
+            } else {
+                if (document.getElementById('work-area')) document.getElementById('work-area').classList.add('hidden');
+                if (document.getElementById('footer-actions')) document.getElementById('footer-actions').classList.add('hidden');
+            }
+        }
+
+        function setNetworkFilter(network) {
+            filters.network = network;
+            ['all', 'insta', 'linkedin'].forEach(k => {
+                const el = document.getElementById(`filter-net-${k}`);
+                if (el) el.className = "px-3 py-1 rounded text-[10px] font-bold uppercase bg-bg-element text-text-muted hover:text-text-main border border-border-main whitespace-nowrap";
+            });
+            const key = network === 'all' ? 'all' : network === 'Instagram' ? 'insta' : 'linkedin';
+            const activeEl = document.getElementById(`filter-net-${key}`);
+            if (activeEl) activeEl.className = "px-3 py-1 rounded text-[10px] font-bold uppercase bg-accent-primary text-black whitespace-nowrap shadow-neon";
+            applyFilters();
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('feed-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            filteredPosts.forEach((post, index) => {
+                const isActive = (index === currentPostIndex && !isCreating) ? 'active' : '';
+                const statusColor = post.ai_status === 'PENDENTE' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-500';
+                let icon = 'fa-brands fa-twitter';
+                if (post.network === 'Instagram') icon = 'fa-brands fa-instagram text-pink-500';
+                if (post.network === 'LinkedIn') icon = 'fa-brands fa-linkedin text-blue-500';
+                if (post.network === 'Facebook') icon = 'fa-brands fa-facebook text-blue-600';
+
+                container.innerHTML += `
+                    <div onclick="loadPost(${index})" class="tech-card ${isActive} p-3 rounded-lg cursor-pointer relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="${icon} text-sm"></i>
+                                <span class="font-bold text-xs text-text-muted truncate max-w-[120px] group-hover:text-text-main">${post.profile}</span>
+                            </div>
+                            <span class="w-2 h-2 rounded-full ${statusColor}"></span>
+                        </div>
+                        <p class="text-[11px] text-text-muted line-clamp-2 mb-2 font-medium group-hover:text-text-main">${post.text}</p>
+                    </div>`;
+            });
+        }
+
+        function loadPost(index) {
+            if (index < 0 || index >= filteredPosts.length) return;
+            isCreating = false;
+            currentPostIndex = index;
+            const modeInd = document.getElementById('mode-indicator');
+            if (modeInd) modeInd.innerHTML = `ID: ${filteredPosts[index].id}`;
+            renderFeed();
+            populateForm(filteredPosts[index]);
+        }
+
+        function populateForm(post) {
+            if (!document.getElementById('input-network')) return;
+
+            document.getElementById('input-network').value = post.network || 'Instagram';
+            document.getElementById('input-profile').value = post.profile || '';
+            document.getElementById('input-date').value = formatDateForInput(post.date);
+            document.getElementById('input-link').value = post.link || '';
+            document.getElementById('btn-open-link').href = post.link || '#';
+            document.getElementById('input-text').value = post.text || '';
+
+            document.getElementById('input-likes').value = post.likes || 0;
+            document.getElementById('input-comments').value = post.comments || 0;
+            document.getElementById('input-shares').value = post.shares || 0;
+
+            updateEngagementSum();
+
+            document.getElementById('input-theme').value = post.theme_id || '';
+
+            resetSentiment();
+            if (post.sentiment) setSentimentButton(post.sentiment);
+        }
+
+        function startNewPost() {
+            isCreating = true;
+            document.getElementById('mode-indicator').innerHTML = "<span class='text-accent-primary animate-pulse'>CRIANDO</span>";
+            populateForm({
+                network: 'Instagram', profile: '', date: '', link: '', text: '',
+                likes: 0, comments: 0, shares: 0, engagement: 0,
+                theme_id: activeTheme !== 'all' ? activeTheme : '',
+                sentiment: null
+            });
+            document.getElementById('input-profile').focus();
+            document.getElementById('work-area').classList.remove('hidden');
+        }
+
+        function setSentiment(type) { resetSentiment(); setSentimentButton(type); }
+        function setSentimentButton(type) {
+            const btn = document.getElementById(`btn-${type}`);
+            if (btn) {
+                btn.classList.add('selected');
+                if (type === 'positive') { btn.style.borderColor = '#10b981'; btn.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'; btn.style.color = '#10b981'; }
+                if (type === 'neutral') { btn.style.borderColor = '#94a3b8'; btn.style.backgroundColor = 'rgba(148, 163, 184, 0.1)'; btn.style.color = '#94a3b8'; }
+                if (type === 'negative') { btn.style.borderColor = '#ef4444'; btn.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; btn.style.color = '#ef4444'; }
+            }
+        }
+        function resetSentiment() {
+            ['positive', 'neutral', 'negative'].forEach(t => {
+                const b = document.getElementById(`btn-${t}`);
+                if (b) {
+                    b.classList.remove('selected');
+                    b.style.borderColor = 'var(--border-main)';
+                    b.style.backgroundColor = 'var(--bg-element)';
+                    b.style.color = 'var(--text-muted)';
+                }
+            });
+        }
+
+        function nextPost() { if (currentPostIndex < filteredPosts.length - 1 && !isCreating) loadPost(currentPostIndex + 1); }
+        function saveAndNext() {
+            const rawDate = document.getElementById('input-date').value;
+            const displayDate = formatDateFromInput(rawDate);
+
+            let currentSentiment = null;
+            if (document.getElementById('btn-positive').classList.contains('selected')) currentSentiment = 'positive';
+            if (document.getElementById('btn-neutral').classList.contains('selected')) currentSentiment = 'neutral';
+            if (document.getElementById('btn-negative').classList.contains('selected')) currentSentiment = 'negative';
+
+            // Engagement is read from the input which is auto-calc'd
+            const totalEng = parseInt(document.getElementById('input-engagement').value) || 0;
+
+            const newPostData = {
+                network: document.getElementById('input-network').value,
+                profile: document.getElementById('input-profile').value,
+                date: displayDate,
+                link: document.getElementById('input-link').value,
+                text: document.getElementById('input-text').value,
+                likes: parseInt(document.getElementById('input-likes').value) || 0,
+                comments: parseInt(document.getElementById('input-comments').value) || 0,
+                shares: parseInt(document.getElementById('input-shares').value) || 0,
+                engagement: totalEng,
+                theme_id: document.getElementById('input-theme').value,
+                ai_status: 'OK',
+                sentiment: currentSentiment
+            };
+
+            if (isCreating) {
+                // Create unique ID
+                const maxId = postsData.length > 0 ? Math.max(...postsData.map(p => p.id)) : 0;
+                newPostData.id = maxId + 1;
+
+                postsData.unshift(newPostData);
+                showToast("Criado com sucesso", "success");
+                renderThemeList();
+                applyFilters();
+            } else {
+                Object.assign(filteredPosts[currentPostIndex], newPostData);
+                showToast("Salvo com sucesso", "success");
+                renderThemeList();
+                renderFeed();
+            }
+        }
+
+        function showToast(msg, type) {
+            const box = document.getElementById('toast-container');
+            if (!box) return;
+            const el = document.createElement('div');
+            const color = type === 'success' ? 'border-l-4 border-accent-success bg-bg-element' : 'bg-bg-element border-l-4 border-slate-500';
+            el.className = `toast ${color} text-text-main px-4 py-3 rounded shadow-neon flex items-center gap-3 text-xs font-bold uppercase tracking-wide min-w-[250px]`;
+            el.innerHTML = `<i class="fa-solid fa-check text-accent-success"></i> ${msg}`;
+            box.appendChild(el); setTimeout(() => el.remove(), 3000);
+        }
+
+        function renderListView() {
+            const tbody = document.getElementById('list-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            postsData.forEach(p => {
+                const themeName = themes.find(t => t.id === p.theme_id)?.name || '-';
+                const sentColor = p.sentiment === 'positive' ? 'text-accent-success' : p.sentiment === 'negative' ? 'text-accent-danger' : 'text-text-muted';
+                tbody.innerHTML += `
+                    <tr class="border-b border-border-light hover:bg-bg-hover transition-colors">
+                        <td class="font-mono text-xs text-text-muted">#${p.id}</td>
+                        <td class="font-mono text-xs">${p.date}</td>
+                        <td class="text-xs font-bold">${p.network}</td>
+                        <td class="text-xs font-bold text-accent-secondary">${p.profile}</td>
+                        <td class="text-xs text-text-muted truncate max-w-xs" title="${p.text}">${p.text}</td>
+                        <td><span class="px-2 py-0.5 rounded border border-border-main bg-bg-element text-[10px] uppercase font-bold text-text-muted">${themeName}</span></td>
+                        <td class="text-xs font-bold uppercase ${sentColor}">${p.sentiment || '-'}</td>
+                        <td class="text-right font-mono text-xs font-bold">${p.engagement}</td>
+                        <td class="text-center"><button onclick="editFromList(${p.id})" class="text-text-muted hover:text-accent-primary"><i class="fa-solid fa-pen-to-square"></i></button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editFromList(id) {
+            const idx = postsData.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                // Determine theme of selected item to set context
+                const postTheme = postsData[idx].theme_id;
+                if (postTheme) activeTheme = postTheme;
+                else activeTheme = 'all';
+
+                selectTheme(activeTheme); // Update UI context
+                switchView('triagem');
+
+                // Need to find index in the filtered list
+                // applyFilters() was called by selectTheme, so filteredPosts is fresh
+                const newIdx = filteredPosts.findIndex(p => p.id === id);
+                if (newIdx !== -1) loadPost(newIdx);
+            }
+        }
+
+        function exportToExcel() {
+            const dataToExport = postsData.map(post => ({
+                'ID': post.id, 'Data': post.date, 'Rede': post.network, 'Perfil': post.profile, 'Texto': post.text,
+                'Likes': post.likes, 'Comentários': post.comments, 'Compartilhamentos': post.shares, 'Engajamento': post.engagement,
+                'Tema': themes.find(t => t.id === post.theme_id)?.name, 'Sentimento': post.sentiment
+            }));
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Dados ANBIMA");
+            XLSX.writeFile(wb, "anbima_export.xlsx");
+        }
+
+        function getThemeColors() {
+            const isDark = document.documentElement.classList.contains('dark');
+            return { text: isDark ? '#94a3b8' : '#64748b', grid: isDark ? '#1e293b' : '#e2e8f0' };
+        }
+
+        function updateDashboard() {
+            const theme = getThemeColors();
+            Chart.defaults.color = theme.text; Chart.defaults.borderColor = theme.grid;
+
+            document.getElementById('dash-total-posts').innerText = postsData.length;
+            const eng = postsData.reduce((s, p) => s + (p.engagement || 0), 0).toLocaleString();
+            document.getElementById('dash-total-eng').innerText = eng;
+
+            const likes = postsData.reduce((s, p) => s + (p.likes || 0), 0);
+            const comments = postsData.reduce((s, p) => s + (p.comments || 0), 0);
+            const shares = postsData.reduce((s, p) => s + (p.shares || 0), 0);
+
+            document.getElementById('dash-likes').innerText = likes.toLocaleString();
+            document.getElementById('dash-comments').innerText = comments.toLocaleString();
+            document.getElementById('dash-shares').innerText = shares.toLocaleString();
+
+            const sents = { positive: 0, neutral: 0, negative: 0 };
+            postsData.forEach(p => { if (p.sentiment) sents[p.sentiment]++; });
+
+            const total = sents.positive + sents.neutral + sents.negative;
+            let sentimentText = '--';
+            if (total > 0) {
+                const posPercent = Math.round((sents.positive / total) * 100);
+                const negPercent = Math.round((sents.negative / total) * 100);
+                if (posPercent > 50) sentimentText = '😊 Positivo';
+                else if (negPercent > 50) sentimentText = '😞 Negativo';
+                else sentimentText = '😐 Neutro';
+            }
+            document.getElementById('dash-sentiment').innerText = sentimentText;
+
+            if (chartsInstances.network) chartsInstances.network.destroy();
+            if (chartsInstances.sentiment) chartsInstances.sentiment.destroy();
+
+            Chart.register(ChartDataLabels);
+
+            const netData = {}; postsData.forEach(p => netData[p.network] = (netData[p.network] || 0) + 1);
+            chartsInstances.network = new Chart(document.getElementById('chartNetwork'), {
+                type: 'doughnut',
+                data: { labels: Object.keys(netData), datasets: [{ data: Object.values(netData), backgroundColor: ['#E1306C', '#0A66C2', '#1877F2', '#000'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' }, datalabels: { color: '#fff', formatter: (v, ctx) => (v * 100 / ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0)).toFixed(0) + "%" } } }
+            });
+
+            chartsInstances.sentiment = new Chart(document.getElementById('chartSentiment'), {
+                type: 'bar',
+                data: { labels: ['Positivo', 'Neutro', 'Negativo'], datasets: [{ label: 'Posts', data: [sents.positive, sents.neutral, sents.negative], backgroundColor: ['#10b981', '#64748b', '#ef4444'], borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: theme.grid } }, x: { grid: { display: false } } }, plugins: { datalabels: { anchor: 'end', align: 'top', color: theme.text, formatter: v => v > 0 ? v : '' } } }
+            });
+        }
+
+        // --- IMPORT/EXPORT FUNCTIONS ---
+        let pendingImportData = null;
+
+        function openImportModal() {
+            document.getElementById('import-modal').classList.remove('hidden');
+            clearFile();
+        }
+
+        function closeImportModal() {
+            document.getElementById('import-modal').classList.add('hidden');
+            clearFile();
+        }
+
+        function downloadTemplate() {
+            const templateData = [
+                {
+                    'rede': 'Instagram',
+                    'perfil': '@exemplo_perfil',
+                    'data': '11/12/2025',
+                    'url': 'https://instagram.com/p/exemplo123',
+                    'texto': 'Exemplo de texto da publicação. Coloque o conteúdo completo aqui.',
+                    'likes': 150,
+                    'comentarios': 25,
+                    'compartilhamentos': 10,
+                    'tema': 'tax_lca',
+                    'sentimento': 'positive'
+                },
+                {
+                    'rede': 'LinkedIn',
+                    'perfil': 'Nome do Autor',
+                    'data': '10/12/2025',
+                    'url': 'https://linkedin.com/posts/exemplo456',
+                    'texto': 'Outro exemplo de publicação sobre finanças e mercado.',
+                    'likes': 300,
+                    'comentarios': 45,
+                    'compartilhamentos': 20,
+                    'tema': 'finfluence',
+                    'sentimento': 'neutral'
+                }
+            ];
+
+            // Add instructions sheet
+            const instructions = [
+                { 'INSTRUÇÕES': 'Como preencher esta planilha:' },
+                { 'INSTRUÇÕES': '' },
+                { 'INSTRUÇÕES': '1. REDE: Instagram, LinkedIn, Facebook, ou X (Twitter)' },
+                { 'INSTRUÇÕES': '2. PERFIL: Nome do perfil ou usuário' },
+                { 'INSTRUÇÕES': '3. DATA: Formato DD/MM/AAAA (ex: 11/12/2025)' },
+                { 'INSTRUÇÕES': '4. URL: Link completo da publicação' },
+                { 'INSTRUÇÕES': '5. TEXTO: Conteúdo da publicação' },
+                { 'INSTRUÇÕES': '6. LIKES: Número de curtidas' },
+                { 'INSTRUÇÕES': '7. COMENTARIOS: Número de comentários' },
+                { 'INSTRUÇÕES': '8. COMPARTILHAMENTOS: Número de compartilhamentos' },
+                { 'INSTRUÇÕES': '9. TEMA: tax_lca, finfluence, pri, ou global' },
+                { 'INSTRUÇÕES': '10. SENTIMENTO: positive, neutral, ou negative' },
+                { 'INSTRUÇÕES': '' },
+                { 'INSTRUÇÕES': 'Apague as linhas de exemplo antes de importar!' }
+            ];
+
+            const wb = XLSX.utils.book_new();
+
+            // Add instructions sheet
+            const wsInstructions = XLSX.utils.json_to_sheet(instructions);
+            XLSX.utils.book_append_sheet(wb, wsInstructions, "LEIA PRIMEIRO");
+
+            // Add template sheet
+            const wsTemplate = XLSX.utils.json_to_sheet(templateData);
+            XLSX.utils.book_append_sheet(wb, wsTemplate, "Dados");
+
+            XLSX.writeFile(wb, "modelo_importacao_anbima.xlsx");
+            showToast("Modelo baixado com sucesso!", "success");
+        }
+
+        // Drag and drop functionality
+        const dropZone = document.getElementById('drop-zone');
+        if (dropZone) {
+            dropZone.addEventListener('click', () => {
+                document.getElementById('file-input').click();
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-accent-primary');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-accent-primary');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-accent-primary');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            // Show file preview
+            document.getElementById('file-name').textContent = file.name;
+            const sizeKB = (file.size / 1024).toFixed(2);
+            document.getElementById('file-size').textContent = `${sizeKB} KB`;
+            document.getElementById('file-preview').classList.remove('hidden');
+
+            // Read file
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // Get first sheet (or "Dados" sheet if it exists)
+                    let sheetName = workbook.SheetNames[0];
+                    if (workbook.SheetNames.includes('Dados')) {
+                        sheetName = 'Dados';
+                    }
+
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    // Process and validate data
+                    pendingImportData = processImportData(jsonData);
+
+                    // Show preview
+                    showImportPreview(pendingImportData);
+
+                    // Enable import button
+                    document.getElementById('import-btn').disabled = false;
+
+                } catch (error) {
+                    showToast("Erro ao ler arquivo: " + error.message, "error");
+                    clearFile();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processImportData(jsonData) {
+            const processed = [];
+
+            jsonData.forEach((row, index) => {
+                try {
+                    // Map column names (case-insensitive)
+                    const getField = (field) => {
+                        const normalized = Object.keys(row).find(k =>
+                            k.toLowerCase().trim() === field.toLowerCase()
+                        );
+                        return normalized ? row[normalized] : null;
+                    };
+
+                    const network = getField('rede') || 'Instagram';
+                    const profile = getField('perfil') || '';
+                    const date = getField('data') || '';
+                    const url = getField('url') || '';
+                    const text = getField('texto') || '';
+                    const likes = parseInt(getField('likes')) || 0;
+                    const comments = parseInt(getField('comentarios') || getField('comentários')) || 0;
+                    const shares = parseInt(getField('compartilhamentos')) || 0;
+                    const theme = getField('tema') || '';
+                    const sentiment = getField('sentimento') || null;
+
+                    // Skip if essential fields are missing
+                    if (!profile || !text) {
+                        return;
+                    }
+
+                    processed.push({
+                        network,
+                        profile,
+                        date,
+                        link: url,
+                        text,
+                        likes,
+                        comments,
+                        shares,
+                        engagement: likes + comments + shares,
+                        theme_id: theme,
+                        sentiment,
+                        ai_status: 'OK'
+                    });
+                } catch (error) {
+                    console.error(`Error processing row ${index}:`, error);
+                }
+            });
+
+            return processed;
+        }
+
+        function showImportPreview(data) {
+            document.getElementById('preview-count').textContent = data.length;
+
+            let previewHTML = '';
+            data.slice(0, 5).forEach((post, i) => {
+                previewHTML += `<div class="mb-2 pb-2 border-b border-border-light last:border-0">
+                    <strong>${i + 1}.</strong> ${post.network} - ${post.profile}<br>
+                    <span class="text-text-muted">${post.text.substring(0, 60)}${post.text.length > 60 ? '...' : ''}</span>
+                </div>`;
+            });
+
+            if (data.length > 5) {
+                previewHTML += `<div class="text-text-muted italic">... e mais ${data.length - 5} registros</div>`;
+            }
+
+            document.getElementById('preview-content').innerHTML = previewHTML;
+            document.getElementById('import-preview').classList.remove('hidden');
+        }
+
+        function clearFile() {
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-preview').classList.add('hidden');
+            document.getElementById('import-preview').classList.add('hidden');
+            document.getElementById('import-btn').disabled = true;
+            pendingImportData = null;
+        }
+
+        function processImport() {
+            if (!pendingImportData || pendingImportData.length === 0) {
+                showToast("Nenhum dado para importar", "error");
+                return;
+            }
+
+            // Get max ID
+            const maxId = postsData.length > 0 ? Math.max(...postsData.map(p => p.id)) : 0;
+
+            // Add IDs and insert into database
+            pendingImportData.forEach((post, index) => {
+                post.id = maxId + index + 1;
+                postsData.unshift(post);
+            });
+
+            showToast(`${pendingImportData.length} publicações importadas com sucesso!`, "success");
+
+            // Update UI
+            renderThemeList();
+            applyFilters();
+
+            // Close modal
+            closeImportModal();
+        }
+
+        // Init
+        renderThemeList();
+        applyFilters();
+    </script>
+</body>
+
+</html>
