@@ -585,9 +585,19 @@
                     <div id="footer-actions"
                         class="absolute bottom-0 left-0 w-full bg-bg-panel/90 backdrop-blur-md border-t border-border-main p-4 flex justify-between items-center z-40">
                         <div class="flex items-center gap-3 text-xs font-mono text-text-muted">
-                            <i class="fa-solid fa-keyboard"></i> Enter para salvar
+                            <i class="fa-solid fa-keyboard"></i> <span id="footer-hint">Enter para salvar</span>
                         </div>
-                        <div class="flex gap-3">
+                        <!-- Buttons for Creating New Post -->
+                        <div id="footer-create-actions" class="flex gap-3 hidden">
+                            <button onclick="cancelCreate()"
+                                class="px-6 py-2 rounded border border-text-muted text-text-muted text-xs font-bold uppercase hover:bg-bg-hover hover:text-text-main transition-colors">Cancelar</button>
+                            <button onclick="saveOnly()"
+                                class="px-8 py-2 rounded bg-gradient-to-r from-accent-primary to-blue-600 text-white dark:text-black font-bold text-xs uppercase hover:shadow-neon transition-all transform hover:-translate-y-0.5">
+                                <i class="fa-solid fa-save mr-1"></i> Salvar
+                            </button>
+                        </div>
+                        <!-- Buttons for Editing Existing Post -->
+                        <div id="footer-edit-actions" class="flex gap-3">
                             <button onclick="nextPost()"
                                 class="px-6 py-2 rounded border border-text-muted text-text-muted text-xs font-bold uppercase hover:bg-bg-hover hover:text-text-main transition-colors">Pular</button>
                             <button onclick="saveAndNext()"
@@ -966,6 +976,12 @@
             if (index < 0 || index >= filteredPosts.length) return;
             isCreating = false;
             currentPostIndex = index;
+
+            // Reset footer buttons to edit mode
+            document.getElementById('footer-create-actions').classList.add('hidden');
+            document.getElementById('footer-edit-actions').classList.remove('hidden');
+            document.getElementById('footer-hint').textContent = 'Enter para salvar';
+
             const modeInd = document.getElementById('mode-indicator');
             if (modeInd) modeInd.innerHTML = `ID: ${filteredPosts[index].id}`;
             renderFeed();
@@ -997,6 +1013,12 @@
         function startNewPost() {
             isCreating = true;
             document.getElementById('mode-indicator').innerHTML = "<span class='text-accent-primary animate-pulse'>CRIANDO</span>";
+
+            // Toggle footer buttons
+            document.getElementById('footer-create-actions').classList.remove('hidden');
+            document.getElementById('footer-edit-actions').classList.add('hidden');
+            document.getElementById('footer-hint').textContent = 'Preencha os campos e clique em Salvar';
+
             populateForm({
                 network: 'Instagram', profile: '', date: '', link: '', text: '',
                 likes: 0, comments: 0, shares: 0, engagement: 0,
@@ -1005,6 +1027,65 @@
             });
             document.getElementById('input-profile').focus();
             document.getElementById('work-area').classList.remove('hidden');
+        }
+
+        function cancelCreate() {
+            isCreating = false;
+            // Reset footer buttons
+            document.getElementById('footer-create-actions').classList.add('hidden');
+            document.getElementById('footer-edit-actions').classList.remove('hidden');
+            document.getElementById('footer-hint').textContent = 'Enter para salvar';
+
+            if (filteredPosts.length > 0) {
+                loadPost(0);
+            }
+        }
+
+        function saveOnly() {
+            const rawDate = document.getElementById('input-date').value;
+            const displayDate = formatDateFromInput(rawDate);
+
+            let currentSentiment = null;
+            if (document.getElementById('btn-positive').classList.contains('selected')) currentSentiment = 'positive';
+            if (document.getElementById('btn-neutral').classList.contains('selected')) currentSentiment = 'neutral';
+            if (document.getElementById('btn-negative').classList.contains('selected')) currentSentiment = 'negative';
+
+            const totalEng = parseInt(document.getElementById('input-engagement').value) || 0;
+
+            const newPostData = {
+                network: document.getElementById('input-network').value,
+                profile: document.getElementById('input-profile').value,
+                date: displayDate,
+                link: document.getElementById('input-link').value,
+                text: document.getElementById('input-text').value,
+                likes: parseInt(document.getElementById('input-likes').value) || 0,
+                comments: parseInt(document.getElementById('input-comments').value) || 0,
+                shares: parseInt(document.getElementById('input-shares').value) || 0,
+                engagement: totalEng,
+                theme_id: document.getElementById('input-theme').value,
+                ai_status: 'OK',
+                sentiment: currentSentiment
+            };
+
+            // Create unique ID
+            const maxId = postsData.length > 0 ? Math.max(...postsData.map(p => p.id)) : 0;
+            newPostData.id = maxId + 1;
+
+            postsData.unshift(newPostData);
+            showToast("Publicação salva com sucesso!", "success");
+
+            // Reset to create another
+            renderThemeList();
+            applyFilters();
+
+            // Keep in create mode but clear form
+            populateForm({
+                network: 'Instagram', profile: '', date: '', link: '', text: '',
+                likes: 0, comments: 0, shares: 0, engagement: 0,
+                theme_id: activeTheme !== 'all' ? activeTheme : '',
+                sentiment: null
+            });
+            document.getElementById('input-profile').focus();
         }
 
         function setSentiment(type) { resetSentiment(); setSentimentButton(type); }
